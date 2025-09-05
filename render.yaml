@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: fake-news-detector
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python download_models.py
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.5
+      - key: RENDER
+        value: true
+    healthCheckPath: /api/health
+    autoDeploy: true
