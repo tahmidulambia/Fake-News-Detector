@@ -3,12 +3,12 @@ services:
     name: fake-news-detector
     env: python
     plan: free
-    buildCommand: pip install --upgrade pip && pip install --only-binary=all --no-cache-dir -r requirements.txt
-    pythonVersion: 3.11.5
+    buildCommand: pip install -r requirements.txt
+    pythonVersion: 3.11.11
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.5
+        value: 3.11.11
       - key: RENDER
         value: true
     healthCheckPath: /api/health
