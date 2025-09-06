@@ -28,7 +28,7 @@ def load_models():
         print(f"📁 Files found in {model_path}: {files}")
     else:
         print(f"❌ Model directory {model_path} does not exist!")
-        return
+        return False
     
     try:
         # Load TF-IDF vectorizer
@@ -76,8 +76,13 @@ def load_models():
                 bert_model.to(device)  # Move to CPU
                 bert_model.eval()  # Set to evaluation mode
                 
-                # Optimize model for inference
-                bert_model = torch.jit.optimize_for_inference(bert_model) if hasattr(torch.jit, 'optimize_for_inference') else bert_model
+                # Optimize model for inference (skip if not available)
+                try:
+                    if hasattr(torch.jit, 'optimize_for_inference'):
+                        bert_model = torch.jit.optimize_for_inference(bert_model)
+                except Exception as e:
+                    print(f"⚠️  Could not optimize BERT model: {e}")
+                    # Continue without optimization
                 
                 # Store device globally for predictions
                 bert_device = device
@@ -91,6 +96,8 @@ def load_models():
             print(f"⚠️  Error loading BERT model: {e}")
                 
         print(f"Successfully loaded {len(models)} traditional models and TF-IDF vectorizer")
+        print(f"Available models: {list(models.keys())}")
+        print(f"TF-IDF vectorizer loaded: {tfidf_vectorizer is not None}")
         return True
         
     except Exception as e:
