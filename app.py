@@ -21,6 +21,15 @@ def load_models():
     
     model_path = "Saved Models"
     
+    # Debug: List all files in the Saved Models directory
+    print(f"🔍 Checking model directory: {model_path}")
+    if os.path.exists(model_path):
+        files = os.listdir(model_path)
+        print(f"📁 Files found in {model_path}: {files}")
+    else:
+        print(f"❌ Model directory {model_path} does not exist!")
+        return
+    
     try:
         # Load TF-IDF vectorizer
         tfidf_path = os.path.join(model_path, "tfidf_vectorizer.pkl")
