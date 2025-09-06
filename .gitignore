@@ -59,7 +59,7 @@ Thumbs.db
 # Large model files now handled by Git LFS
 # Saved Models/bert_model/model.safetensors
 # Saved Models/tfidf_vectorizer.pkl
-# Saved Models/knn_model.pkl
 
-# Large training data files now handled by Git LFS
-# Data Files/*.csv
+# Exclude KNN model and data files (not needed for deployment)
+Saved Models/knn_model.pkl
+Data Files/*.csv
