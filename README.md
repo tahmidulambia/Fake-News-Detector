@@ -170,3 +170,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 **Note**: This application is for educational and demonstration purposes. Always verify information from multiple reliable sources.
 
+# LFS files properly configured
