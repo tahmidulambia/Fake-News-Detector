@@ -125,7 +125,21 @@ def download_models():
                     success_count -= 1  # Count as failed if extraction failed
     
     print(f"📊 Downloaded {success_count}/{total_files} files successfully")
-    return success_count > 0
+    
+    # Check if critical files were downloaded
+    critical_files = ["tfidf_vectorizer.pkl", "logistic_regression_model.pkl", "bert_model.zip", "bert_tokenizer.zip"]
+    critical_success = 0
+    
+    for critical_file in critical_files:
+        if (model_dir / critical_file).exists():
+            critical_success += 1
+        else:
+            print(f"❌ Critical file missing: {critical_file}")
+    
+    print(f"📊 Critical files downloaded: {critical_success}/{len(critical_files)}")
+    
+    # Return True only if all critical files are downloaded
+    return critical_success == len(critical_files)
 
 def create_model_placeholders():
     """Create placeholder files for missing models (fallback)"""
@@ -148,8 +162,9 @@ def main():
         
         # Try to download from Google Drive
         if not download_models():
-            print("⚠️  Google Drive download failed, creating placeholders...")
-            create_model_placeholders()
+            print("❌ Google Drive download failed!")
+            print("❌ Build cannot continue without models. Exiting...")
+            exit(1)  # Fail the build
     else:
         print("💻 Running locally - checking for existing model files...")
         
