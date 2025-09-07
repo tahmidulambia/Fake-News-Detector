@@ -57,6 +57,5 @@ Thumbs.db
 *.temp
 
 # Exclude all model files - will be downloaded from cloud storage
-Saved Models/*.pkl
-Saved Models/bert_model/model.safetensors
-Data Files/*.csv
+Saved Models/
+Data Files/
