@@ -21,13 +21,8 @@ def load_models():
     
     model_path = "Saved Models"
     
-    # Debug: List all files in the Saved Models directory
-    print(f"🔍 Checking model directory: {model_path}")
-    if os.path.exists(model_path):
-        files = os.listdir(model_path)
-        print(f"📁 Files found in {model_path}: {files}")
-    else:
-        print(f"❌ Model directory {model_path} does not exist!")
+    if not os.path.exists(model_path):
+        print(f"Model directory {model_path} does not exist!")
         return False
     
     try:
@@ -36,12 +31,12 @@ def load_models():
         if os.path.exists(tfidf_path):
             with open(tfidf_path, 'rb') as f:
                 tfidf_vectorizer = pickle.load(f)
-            print("✅ Loaded TF-IDF vectorizer")
+            print("Loaded TF-IDF vectorizer")
         else:
-            print("⚠️  TF-IDF vectorizer not found - traditional models will be disabled")
+            print("TF-IDF vectorizer not found - traditional models will be disabled")
             tfidf_vectorizer = None
         
-        # Load all models (skip missing large files)
+        # Load all models
         model_files = {
             'logistic_regression': 'logistic_regression_model.pkl',
             'random_forest': 'random_forest_model.pkl', 
@@ -54,9 +49,9 @@ def load_models():
             if os.path.exists(file_path):
                 with open(file_path, 'rb') as f:
                     models[model_name] = pickle.load(f)
-                print(f"✅ Loaded {model_name} model")
+                print(f"Loaded {model_name} model")
             else:
-                print(f"⚠️  Skipping {model_name} model (file not found: {filename})")
+                print(f"Skipping {model_name} model (file not found: {filename})")
         
         # Load BERT model and tokenizer
         try:
@@ -80,24 +75,22 @@ def load_models():
                 try:
                     if hasattr(torch.jit, 'optimize_for_inference'):
                         bert_model = torch.jit.optimize_for_inference(bert_model)
-                except Exception as e:
-                    print(f"⚠️  Could not optimize BERT model: {e}")
+                except Exception:
                     # Continue without optimization
+                    pass
                 
                 # Store device globally for predictions
                 bert_device = device
                 
-                print("✅ BERT model and tokenizer loaded successfully")
+                print("BERT model and tokenizer loaded successfully")
             else:
-                print("⚠️  BERT model files not found, skipping BERT loading")
+                print("BERT model files not found, skipping BERT loading")
         except ImportError:
-            print("⚠️  Transformers library not available, skipping BERT loading")
+            print("Transformers library not available, skipping BERT loading")
         except Exception as e:
-            print(f"⚠️  Error loading BERT model: {e}")
+            print(f"Error loading BERT model: {e}")
                 
-        print(f"Successfully loaded {len(models)} traditional models and TF-IDF vectorizer")
-        print(f"Available models: {list(models.keys())}")
-        print(f"TF-IDF vectorizer loaded: {tfidf_vectorizer is not None}")
+        print(f"Successfully loaded {len(models)} traditional models")
         return True
         
     except Exception as e:
@@ -231,24 +224,17 @@ def home():
     """Render the main page"""
     return render_template('index.html')
 
-@app.route('/api/predict', methods=['POST', 'GET'])
+@app.route('/api/predict', methods=['POST'])
 def predict():
     """API endpoint for fake news prediction"""
     try:
-        # Handle both POST and GET requests
-        if request.method == 'GET':
-            # For GET requests, get text from query parameters
-            text = request.args.get('text', '')
-            model_name = request.args.get('model', 'logistic_regression')
-        else:
-            # For POST requests, get data from JSON body
-            data = request.get_json()
-            
-            if not data or 'text' not in data:
-                return jsonify({"error": "No text provided"}), 400
-            
-            text = data['text']
-            model_name = data.get('model', 'logistic_regression')
+        data = request.get_json()
+        
+        if not data or 'text' not in data:
+            return jsonify({"error": "No text provided"}), 400
+        
+        text = data['text']
+        model_name = data.get('model', 'logistic_regression')
         
         if len(text.strip()) < 10:
             return jsonify({"error": "Text too short. Please provide at least 10 characters."}), 400
@@ -286,46 +272,14 @@ def health_check():
         "vectorizer_loaded": tfidf_vectorizer is not None
     })
 
-@app.route('/api/debug', methods=['GET'])
-def debug_info():
-    """Debug endpoint to check model files and environment"""
-    import os
-    from pathlib import Path
-    
-    model_path = Path("Saved Models")
-    debug_info = {
-        "current_directory": os.getcwd(),
-        "environment": "RENDER" if os.environ.get('RENDER') else "LOCAL",
-        "model_directory_exists": model_path.exists(),
-        "model_directory_contents": [],
-        "models_loaded": list(models.keys()),
-        "vectorizer_loaded": tfidf_vectorizer is not None,
-        "bert_model_loaded": bert_model is not None,
-        "bert_tokenizer_loaded": bert_tokenizer is not None
-    }
-    
-    if model_path.exists():
-        try:
-            debug_info["model_directory_contents"] = list(model_path.iterdir())
-        except Exception as e:
-            debug_info["model_directory_error"] = str(e)
-    
-    return jsonify(debug_info)
-
 if __name__ == '__main__':
-    print("🚀 Starting Flask application...")
-    print(f"🔍 Current working directory: {os.getcwd()}")
-    print(f"🔍 Environment: {'RENDER' if os.environ.get('RENDER') else 'LOCAL'}")
-    
     # Load models on startup
-    print("📦 Attempting to load models...")
     if load_models():
-        print("✅ Models loaded successfully!")
+        print("Models loaded successfully!")
         # Get port from environment variable (Render sets this)
         port = int(os.environ.get('PORT', 8080))
-        print(f"🌐 Starting Flask app on port {port}")
+        print(f"Starting Flask app on port {port}")
         app.run(debug=False, host='0.0.0.0', port=port)
     else:
-        print("❌ Failed to load models. Please check the model files.")
-        print("❌ Exiting application...")
+        print("Failed to load models. Please check the model files.")
         exit(1)
