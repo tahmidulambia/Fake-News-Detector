@@ -231,17 +231,24 @@ def home():
     """Render the main page"""
     return render_template('index.html')
 
-@app.route('/api/predict', methods=['POST'])
+@app.route('/api/predict', methods=['POST', 'GET'])
 def predict():
     """API endpoint for fake news prediction"""
     try:
-        data = request.get_json()
-        
-        if not data or 'text' not in data:
-            return jsonify({"error": "No text provided"}), 400
-        
-        text = data['text']
-        model_name = data.get('model', 'logistic_regression')
+        # Handle both POST and GET requests
+        if request.method == 'GET':
+            # For GET requests, get text from query parameters
+            text = request.args.get('text', '')
+            model_name = request.args.get('model', 'logistic_regression')
+        else:
+            # For POST requests, get data from JSON body
+            data = request.get_json()
+            
+            if not data or 'text' not in data:
+                return jsonify({"error": "No text provided"}), 400
+            
+            text = data['text']
+            model_name = data.get('model', 'logistic_regression')
         
         if len(text.strip()) < 10:
             return jsonify({"error": "Text too short. Please provide at least 10 characters."}), 400
@@ -279,14 +286,46 @@ def health_check():
         "vectorizer_loaded": tfidf_vectorizer is not None
     })
 
+@app.route('/api/debug', methods=['GET'])
+def debug_info():
+    """Debug endpoint to check model files and environment"""
+    import os
+    from pathlib import Path
+    
+    model_path = Path("Saved Models")
+    debug_info = {
+        "current_directory": os.getcwd(),
+        "environment": "RENDER" if os.environ.get('RENDER') else "LOCAL",
+        "model_directory_exists": model_path.exists(),
+        "model_directory_contents": [],
+        "models_loaded": list(models.keys()),
+        "vectorizer_loaded": tfidf_vectorizer is not None,
+        "bert_model_loaded": bert_model is not None,
+        "bert_tokenizer_loaded": bert_tokenizer is not None
+    }
+    
+    if model_path.exists():
+        try:
+            debug_info["model_directory_contents"] = list(model_path.iterdir())
+        except Exception as e:
+            debug_info["model_directory_error"] = str(e)
+    
+    return jsonify(debug_info)
+
 if __name__ == '__main__':
+    print("🚀 Starting Flask application...")
+    print(f"🔍 Current working directory: {os.getcwd()}")
+    print(f"🔍 Environment: {'RENDER' if os.environ.get('RENDER') else 'LOCAL'}")
+    
     # Load models on startup
+    print("📦 Attempting to load models...")
     if load_models():
-        print("Models loaded successfully!")
+        print("✅ Models loaded successfully!")
         # Get port from environment variable (Render sets this)
         port = int(os.environ.get('PORT', 8080))
-        print(f"Starting Flask app on port {port}")
+        print(f"🌐 Starting Flask app on port {port}")
         app.run(debug=False, host='0.0.0.0', port=port)
     else:
-        print("Failed to load models. Please check the model files.")
+        print("❌ Failed to load models. Please check the model files.")
+        print("❌ Exiting application...")
         exit(1)
