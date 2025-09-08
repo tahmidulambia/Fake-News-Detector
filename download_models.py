@@ -127,7 +127,7 @@ def download_models():
     print(f"Downloaded {success_count}/{total_files} files successfully")
     
     # Check if critical files were downloaded
-    critical_files = ["tfidf_vectorizer.pkl", "logistic_regression_model.pkl", "bert_model.zip", "bert_tokenizer.zip"]
+    critical_files = ["tfidf_vectorizer.pkl", "logistic_regression_model.pkl", "bert_model", "bert_tokenizer"]
     critical_success = 0
     
     for critical_file in critical_files:
