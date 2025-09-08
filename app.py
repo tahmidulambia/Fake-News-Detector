@@ -272,6 +272,44 @@ def health_check():
         "vectorizer_loaded": tfidf_vectorizer is not None
     })
 
+@app.route('/api/debug', methods=['GET'])
+def debug_info():
+    """Debug endpoint to check model files and environment"""
+    import os
+    from pathlib import Path
+    
+    model_path = Path("Saved Models")
+    debug_info = {
+        "current_directory": os.getcwd(),
+        "environment": "RENDER" if os.environ.get('RENDER') else "LOCAL",
+        "model_directory_exists": model_path.exists(),
+        "model_directory_contents": [],
+        "models_loaded": list(models.keys()),
+        "vectorizer_loaded": tfidf_vectorizer is not None,
+        "bert_model_loaded": bert_model is not None,
+        "bert_tokenizer_loaded": bert_tokenizer is not None,
+        "total_models_loaded": len(models),
+        "load_models_success": False
+    }
+    
+    if model_path.exists():
+        try:
+            debug_info["model_directory_contents"] = [str(p) for p in model_path.iterdir()]
+            debug_info["model_directory_size"] = sum(f.stat().st_size for f in model_path.rglob('*') if f.is_file())
+        except Exception as e:
+            debug_info["model_directory_error"] = str(e)
+    else:
+        debug_info["model_directory_error"] = "Directory does not exist"
+    
+    # Test if we can load models
+    try:
+        test_load = load_models()
+        debug_info["load_models_success"] = test_load
+    except Exception as e:
+        debug_info["load_models_error"] = str(e)
+    
+    return jsonify(debug_info)
+
 if __name__ == '__main__':
     # Load models on startup
     if load_models():
