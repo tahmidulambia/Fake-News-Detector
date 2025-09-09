@@ -311,11 +311,20 @@ def debug_info():
     return jsonify(debug_info)
 
 if __name__ == '__main__':
+    # Download models first (in Render environment)
+    if os.environ.get('RENDER'):
+        print("Running in Render environment - downloading models on startup...")
+        from download_models import download_models
+        if not download_models():
+            print("Failed to download models on startup!")
+            exit(1)
+        print("Models downloaded successfully!")
+    
     # Load models on startup
     if load_models():
         print("Models loaded successfully!")
         # Get port from environment variable (Render sets this)
-        port = int(os.environ.get('PORT', 8080))
+        port = int(os.environ.get('PORT', 10000))  # Use Render's default port
         print(f"Starting Flask app on port {port}")
         app.run(debug=False, host='0.0.0.0', port=port)
     else:
