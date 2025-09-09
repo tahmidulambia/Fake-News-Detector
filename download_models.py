@@ -156,25 +156,17 @@ def main():
     """Main function to set up models for deployment"""
     print("Setting up models for deployment...")
     
-    # Check if we're in a deployment environment
-    if os.environ.get('RENDER'):
-        print("Running in Render environment")
-        
+    # Check if models already exist locally
+    model_dir = Path("Saved Models")
+    if model_dir.exists() and any(model_dir.iterdir()):
+        print("Local models found, skipping download")
+    else:
+        print("No local models found, downloading from Google Drive...")
         # Try to download from Google Drive
         if not download_models():
             print("Google Drive download failed!")
-            print("Build cannot continue without models. Exiting...")
-            exit(1)  # Fail the build
-    else:
-        print("Running locally - checking for existing model files...")
-        
-        # Check if models already exist locally
-        model_dir = Path("Saved Models")
-        if model_dir.exists() and any(model_dir.iterdir()):
-            print("Local models found, skipping download")
-        else:
-            print("No local models found, creating placeholders...")
-            create_model_placeholders()
+            print("Cannot continue without models. Exiting...")
+            exit(1)
     
     print("Model setup complete!")
 

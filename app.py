@@ -280,7 +280,7 @@ def debug_info():
     model_path = Path("Saved Models")
     debug_info = {
         "current_directory": os.getcwd(),
-        "environment": "RENDER" if os.environ.get('RENDER') else "LOCAL",
+        "environment": "PRODUCTION",
         "model_directory_exists": model_path.exists(),
         "model_directory_contents": [],
         "models_loaded": list(models.keys()),
@@ -310,22 +310,14 @@ def debug_info():
     return jsonify(debug_info)
 
 # Load models when the module is imported (for production)
-if os.environ.get('RENDER'):
-    print("Running in Render environment - loading models...")
-    port = os.environ.get('PORT', 'not_set')
-    print(f"Render PORT environment variable: {port}")
-    if not load_models():
-        print("Failed to load models!")
-        exit(1)
-    print("Models loaded successfully!")
+print("Loading models...")
+if not load_models():
+    print("Failed to load models!")
+    exit(1)
+print("Models loaded successfully!")
 
 if __name__ == '__main__':
-    # Only for local development
-    if load_models():
-        print("Models loaded successfully!")
-        port = int(os.environ.get('PORT', 8080))
-        print(f"Starting Flask app on port {port}")
-        app.run(debug=True, host='0.0.0.0', port=port)
-    else:
-        print("Failed to load models. Please check the model files.")
-        exit(1)
+    # For local development
+    port = int(os.environ.get('GRADIO_SERVER_PORT', 7860))
+    print(f"Starting Flask app on port {port}")
+    app.run(debug=True, host='0.0.0.0', port=port)
