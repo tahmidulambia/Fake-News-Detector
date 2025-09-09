@@ -40,8 +40,7 @@ def load_models():
         model_files = {
             'logistic_regression': 'logistic_regression_model.pkl',
             'random_forest': 'random_forest_model.pkl', 
-            'gradient_boosting': 'gradient_boosting_model.pkl',
-            'knn': 'knn_model.pkl'  # Will be skipped if missing
+            'gradient_boosting': 'gradient_boosting_model.pkl',s
         }
         
         for model_name, filename in model_files.items():
@@ -310,23 +309,21 @@ def debug_info():
     
     return jsonify(debug_info)
 
+# Load models when the module is imported (for production)
+if os.environ.get('RENDER'):
+    print("Running in Render environment - loading models...")
+    if not load_models():
+        print("Failed to load models!")
+        exit(1)
+    print("Models loaded successfully!")
+
 if __name__ == '__main__':
-    # Download models first (in Render environment)
-    if os.environ.get('RENDER'):
-        print("Running in Render environment - downloading models on startup...")
-        from download_models import download_models
-        if not download_models():
-            print("Failed to download models on startup!")
-            exit(1)
-        print("Models downloaded successfully!")
-    
-    # Load models on startup
+    # Only for local development
     if load_models():
         print("Models loaded successfully!")
-        # Get port from environment variable (Render sets this)
-        port = int(os.environ.get('PORT', 10000))  # Use Render's default port
+        port = int(os.environ.get('PORT', 8080))
         print(f"Starting Flask app on port {port}")
-        app.run(debug=False, host='0.0.0.0', port=port)
+        app.run(debug=True, host='0.0.0.0', port=port)
     else:
         print("Failed to load models. Please check the model files.")
         exit(1)
