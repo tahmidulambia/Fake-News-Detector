@@ -1,128 +1,74 @@
 #!/usr/bin/env python3
 """
-Model Download Script for Render Deployment
-Downloads model files from Google Drive during build process.
+Model Download Script for Hugging Face Spaces Deployment
+Downloads model files from Hugging Face Hub during build process.
 """
 
 import os
-import requests
-import zipfile
 from pathlib import Path
-import json
+from huggingface_hub import hf_hub_download
 
-# Google Drive file IDs - you'll need to update these with your actual file IDs
-GOOGLE_DRIVE_FILES = {
-    # Individual model files
-    "tfidf_vectorizer.pkl": "1vBO8rtnaQr4yiMQ4KVZ0FKmWQRbs-0jU",
-    "gradient_boosting_model.pkl": "1NbkQ03QZnJATNQErBJ5BU_JmJSmib80d",
-    "logistic_regression_model.pkl": "1oqLXlBrb3hIIVKppG9Yu9MZhPFg7rfkd", 
-    "random_forest_model.pkl": "1MhqMkKVcVMrTMHM_-6cNA3t0zKY52oFC",
-    "model_metadata.pkl": "1-doTMaxe_LdYfIOauEiG7LAAbb9BBpd2",
-    
-    # BERT model folder (zip file)
-    "bert_model.zip": "1Mncmc9mSJs4bOmGc0Iu9HCHgNK92S7zN",
-    "bert_tokenizer.zip": "1jzZvwBizqV7RZxe9PLT0E3E35za0uehj"
-}
+# Hugging Face model repository
+MODEL_REPO_ID = "tahmidul159/fake-news-models"
 
-def download_from_google_drive(file_id, destination):
-    """Download a file from Google Drive using file ID"""
-    print(f"Downloading {destination} from Google Drive...")
-    
-    # Google Drive direct download URL
-    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+# Model files to download from Hugging Face
+HUGGINGFACE_FILES = [
+    "tfidf_vectorizer.pkl",
+    "logistic_regression_model.pkl", 
+    "random_forest_model.pkl",
+    "gradient_boosting_model.pkl",
+    "model_metadata.pkl",
+    "bert_model/config.json",
+    "bert_model/model.safetensors",
+    "bert_tokenizer/special_tokens_map.json",
+    "bert_tokenizer/tokenizer_config.json",
+    "bert_tokenizer/vocab.txt"
+]
+
+def download_from_huggingface(filename, destination):
+    """Download a file from Hugging Face Hub"""
+    print(f"Downloading {filename} from Hugging Face...")
     
     try:
-        # First, try direct download with redirects enabled
-        response = requests.get(url, stream=True, allow_redirects=True)
+        # Download file from Hugging Face Hub
+        downloaded_path = hf_hub_download(
+            repo_id=MODEL_REPO_ID,
+            filename=filename,
+            local_dir=os.path.dirname(destination),
+            local_dir_use_symlinks=False
+        )
         
-        # Check if we got a virus scan warning page
-        if response.headers.get('content-type', '').startswith('text/html'):
-            print(f"Large file detected, handling virus scan warning...")
-            
-            # Extract UUID from the HTML response
-            html_content = response.text
-            import re
-            uuid_match = re.search(r'uuid" value="([^"]*)"', html_content)
-            
-            if uuid_match:
-                uuid = uuid_match.group(1)
-                print(f"Found UUID: {uuid}")
-                
-                # Use the proper download URL with UUID
-                download_url = f"https://drive.usercontent.google.com/download?id={file_id}&export=download&confirm=t&uuid={uuid}"
-                response = requests.get(download_url, stream=True, allow_redirects=True)
-            else:
-                print(f"Could not extract UUID from virus scan warning page")
-                return False
-        
-        response.raise_for_status()
-        
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(destination), exist_ok=True)
-        
-        with open(destination, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+        # Move to the correct destination if needed
+        if downloaded_path != destination:
+            os.rename(downloaded_path, destination)
         
         # Check file size
         file_size = os.path.getsize(destination)
-        print(f"Downloaded {destination} ({file_size:,} bytes)")
-        
-        # Additional check: if file is suspiciously small and we expected a large file
-        if file_size < 1000 and 'bert_model' in str(destination):
-            print(f"Warning: BERT model file is very small ({file_size} bytes), might be corrupted")
-            return False
-            
+        print(f"Downloaded {filename} ({file_size:,} bytes)")
         return True
         
     except Exception as e:
-        print(f"Failed to download {destination}: {e}")
-        return False
-
-def extract_zip(zip_path, extract_to):
-    """Extract a zip file to the specified directory"""
-    print(f"Extracting {zip_path} to {extract_to}...")
-    
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_to)
-        print(f"Extracted {zip_path}")
-        
-        # Remove the zip file after extraction
-        os.remove(zip_path)
-        return True
-        
-    except Exception as e:
-        print(f"Failed to extract {zip_path}: {e}")
+        print(f"Failed to download {filename}: {e}")
         return False
 
 def download_models():
-    """Download all model files from Google Drive"""
-    print("Downloading models from Google Drive...")
+    """Download all model files from Hugging Face Hub"""
+    print("Downloading models from Hugging Face Hub...")
     
     model_dir = Path("Saved Models")
     model_dir.mkdir(exist_ok=True)
     
     success_count = 0
-    total_files = len(GOOGLE_DRIVE_FILES)
+    total_files = len(HUGGINGFACE_FILES)
     
-    for filename, file_id in GOOGLE_DRIVE_FILES.items():
-        if file_id == f"YOUR_{filename.upper().replace('.', '_').replace('/', '_')}_FILE_ID":
-            print(f"Skipping {filename} - file ID not configured")
-            continue
-            
+    for filename in HUGGINGFACE_FILES:
         destination = model_dir / filename
         
-        if download_from_google_drive(file_id, destination):
+        # Create parent directories if they don't exist
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        
+        if download_from_huggingface(filename, destination):
             success_count += 1
-            
-            # Extract zip files
-            if filename.endswith('.zip'):
-                extract_dir = model_dir / filename.replace('.zip', '')
-                if extract_zip(destination, extract_dir):
-                    print(f"Successfully extracted {filename}")
-                else:
-                    success_count -= 1  # Count as failed if extraction failed
     
     print(f"Downloaded {success_count}/{total_files} files successfully")
     
@@ -161,10 +107,10 @@ def main():
     if model_dir.exists() and any(model_dir.iterdir()):
         print("Local models found, skipping download")
     else:
-        print("No local models found, downloading from Google Drive...")
-        # Try to download from Google Drive
+        print("No local models found, downloading from Hugging Face Hub...")
+        # Try to download from Hugging Face Hub
         if not download_models():
-            print("Google Drive download failed!")
+            print("Hugging Face Hub download failed!")
             print("Cannot continue without models. Exiting...")
             exit(1)
     
