@@ -40,7 +40,7 @@ def load_models():
         model_files = {
             'logistic_regression': 'logistic_regression_model.pkl',
             'random_forest': 'random_forest_model.pkl', 
-            'gradient_boosting': 'gradient_boosting_model.pkl',s
+            'gradient_boosting': 'gradient_boosting_model.pkl'
         }
         
         for model_name, filename in model_files.items():
@@ -312,6 +312,8 @@ def debug_info():
 # Load models when the module is imported (for production)
 if os.environ.get('RENDER'):
     print("Running in Render environment - loading models...")
+    port = os.environ.get('PORT', 'not_set')
+    print(f"Render PORT environment variable: {port}")
     if not load_models():
         print("Failed to load models!")
         exit(1)
