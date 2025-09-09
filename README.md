@@ -1,3 +1,12 @@
+---
+title: Fake News Detector
+emoji: 🛡️
+colorFrom: blue
+colorTo: red
+sdk: docker
+app_port: 7860
+---
+
 # Fake News Detector - Machine Learning Web Application
 
 A production-ready web application that uses machine learning to classify news articles as real or fake. Built with Python, Flask, and Scikit-learn.
